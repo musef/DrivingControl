@@ -134,7 +134,9 @@ function goForrestGo(coordx,coordy) {
             // al borde del plano
             texto=texto+"<p> BORDE DEL PLANO: "+arr['posy']+" / "+arr['posx']+"</p>";
             // al llegar al borde, debemos retroceder hasta el último cruce
-            texto=goBack(arr,texto);
+            // iniciamos otra vez un proceso iterativo que lanza de nueva la busqueda
+            // hacia atras en el tiempo hasta hallar el final
+            texto=goBack(arr,where,texto);
         }
 
         cont++;
@@ -621,37 +623,79 @@ function checkIfBorder(arrmap) {
     return false;
 }
 
-function goBack(arrmap,texto) {
+function goBack(arrmap,where,texto) {
     
     var mapa=arrmap['map'];
     var crossSelection=[];
     var iniciomap=mapa.length-1;
-    var finmap=mapa.length-10;
+    var finmap=mapa.length-25;
     for (var i=iniciomap;i>finmap;i--) {
         
         // vamos mapeando el entorno recorrido, desde la casilla
         // inmediatamente anterior a la menos 10
         var entorno=detectEntornoR ( mapa[i][0], mapa[i][1]);
         texto=texto+"<p>Con las siguientes opciones: "+i+" / "+mapa[i][0]+" / "+mapa[i][1]+"</p>";
-        texto=texto+"<p>"+entorno[0]+" / "+entorno[1]+" / "+entorno[2]+"</p>";
-        texto=texto+"<p>"+entorno[3]+" / W / "+entorno[4]+"</p>";
-        texto=texto+"<p>"+entorno[5]+" / "+entorno[6]+" / "+entorno[7]+"</p>";
         
         // contabilizamos las posibles variantes saltadas en los cruces
         // teniendo en cuenta que no podemos contar las diagonales
         var counter=0;        
-        if (entorno[1]=="  ") counter++;
-        if (entorno[3]=="  ") counter++;
-        if (entorno[4]=="  ") counter++;
-        if (entorno[6]=="  ") counter++;
-        
-        texto=texto+"<p> Opciones con cruce: "+counter+"</p>";
-        
-        if (counter > 0) {
+        if (entorno[1]=="  ") {
+            counter++;
+            // almacenamos el nuevo valor en el cruce
             var cx=mapa[i][1];
+            var cy=mapa[i][0]-1;
+            var frm=[cy,cx];      
+            // valoramos el cruce en distancia
+            var limit=getLimit(frm,where,9999);
+            //lo guardamos
+            crossSelection.push(frm,limit);            
+        }
+        if (entorno[3]=="  ") {
+            counter++;
+            // almacenamos el nuevo valor en el cruce
+            var cx=mapa[i][1]-1;
             var cy=mapa[i][0];
-            //goForrestGo(cx,cy);
+            var frm=[cy,cx];      
+            // valoramos el cruce en distancia
+            var limit=getLimit(frm,where,9999);
+            //lo guardamos
+            crossSelection.push(frm,limit);            
+        }
+        if (entorno[4]=="  ") {
+            counter++;
+            // almacenamos el nuevo valor en el cruce
+            var cx=mapa[i][1]+1;
+            var cy=mapa[i][0];
+            var frm=[cy,cx];      
+            // valoramos el cruce en distancia
+            var limit=getLimit(frm,where,9999);
+            //lo guardamos
+            crossSelection.push(frm,limit);            
+        }     
+        if (entorno[6]=="  ") {
+            counter++;
+            // almacenamos el nuevo valor en el cruce
+            var cx=mapa[i][1];
+            var cy=mapa[i][0]+1;
+            var frm=[cy,cx];      
+            // valoramos el cruce en distancia
+            var limit=getLimit(frm,where,9999);
+            //lo guardamos
+            crossSelection.push(frm,limit);            
+        }        
+        texto=texto+"<p> Opciones con cruce: "+counter+"</p>";
+                        
+    }
+    // ahora vamos a filtrar y seleccionar la mejor direccion
+    // a partir de la valoracion obtenida
+    var selected=[];
+    var valoration=9999;
+    for (var j in crossSelection) {
+        if (crossSelection[1]<valoration) {
+            valoration=crossSelection[1];
+            selected=crossSelection[0];
         }
     }
+    texto=texto+"<p> La mejor opción de cruce obtenida es : "+selected[0]+" - "+selected[1]+"</p>";
     return texto;
 }
