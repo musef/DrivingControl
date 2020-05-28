@@ -17,6 +17,9 @@
 var sizex=50;
 var sizey=50;
 
+    // cruces que encontramos en el recorrido
+    var cruces=[];
+
 function goForrestGo(coordx,coordy) {
     // coordenadas de inicio
     var startingpointx=coordx;
@@ -37,7 +40,6 @@ function goForrestGo(coordx,coordy) {
     // desde una ubicación
     var from=[startingpointy,startingpointx];
 
-
     var where;
     var way;
     var until;
@@ -45,103 +47,121 @@ function goForrestGo(coordx,coordy) {
     var entorno;
     var mov;
 
-
+    // por cual movimiento vamos
     var cont=0;
+    // maximos de movimientos a realizar
+    // seria como quedarse sin gasolina
+    var maxOper=75;
     do {
 
         // desde una ubicación
         from=[startingpointy,startingpointx];
 
-        texto=texto+"<p>Queremos ir desde el punto Y:"+from[0]+" X:"+from[1]+"</p>";
+        //texto=texto+"<p>Queremos ir desde el punto Y:"+from[0]+" X:"+from[1]+"</p>";
         // tenemos que acceder a un punto en el mapa
         where=getAddress(from);
-        texto=texto+"<p>Hasta el punto Y:"+where[0]+" punto X:"+where[1]+"</p>";
+        //texto=texto+"<p>Hasta el punto Y:"+where[0]+" punto X:"+where[1]+"</p>";
         // utilizando una via
         way=getWay(from,where);
-        texto=texto+"<p>Empezando en la casilla punto Y:"+way[0]+" punto X:"+way[1]+"</p>";
+       // texto=texto+"<p>Empezando en la casilla punto Y:"+way[0]+" punto X:"+way[1]+"</p>";
         // durante un periodo de tiempo o hasta un objetivo
-        until=getLimit(from, where,75);
-        texto=texto+"<p>En un tiempo maximo de "+until+"</p>";
+        until=getLimit(from, where,9999);
+        //texto=texto+"<p>En un tiempo maximo de "+until+"</p>";
 
         gway=generalWay(where[0], where[1], from[0], from[1]);
-        texto=texto+"<p>Tomando una direccion general "+gway[0]+" "+gway[1]+"</p>";
+        //texto=texto+"<p>Tomando una direccion general "+gway[0]+" "+gway[1]+"</p>";
 
         entorno=detectEntornoR(from[0], from[1]);
-        texto=texto+"<p>Con las siguientes opciones: </p>";
-        texto=texto+"<p>"+entorno[0]+" / "+entorno[1]+" / "+entorno[2]+"</p>";
-        texto=texto+"<p>"+entorno[3]+" / W / "+entorno[4]+"</p>";
-        texto=texto+"<p>"+entorno[5]+" / "+entorno[6]+" / "+entorno[7]+"</p>";
+        //texto=texto+"<p>Con las siguientes opciones: </p>";
+        //texto=texto+"<p>"+entorno[0]+" / "+entorno[1]+" / "+entorno[2]+"</p>";
+       // texto=texto+"<p>"+entorno[3]+" / W / "+entorno[4]+"</p>";
+        //texto=texto+"<p>"+entorno[5]+" / "+entorno[6]+" / "+entorno[7]+"</p>";
 
         mov=recursiveWayR(arr,where[0],where[1],true);
 
-        for (var i in mov) {
-            texto=texto+"<p>PODEMOS IR A punto Y:"+mov[i]['posy']+" / punto X:"+mov[i]['posx']+" </p>";
-        }
-
-        if (mov.length==1) {
-            // movemos el puntero a la nueva posicion
-            startingpointy=mov[0]['posy'];
-            startingpointx=mov[0]['posx'];
-            //modificamos el arraymap con los datos del desplazamiento
-            arr['oldx']=arr['posx'];
-            arr['oldy']=arr['posy'];
-            arr['posx']=startingpointx;
-            arr['posy']=startingpointy;
-            // Guardamos en el mapa la posicion
-            arr['map'].push([arr['oldy'],arr['oldx']]);
-            // pintamos en el mapa la posicion
-            printPosition(arr);
-
-        } else {
-            // seleccionamos el movimiento a hacer
-            // en funcion de la distancia a la que nos deja
-            // del destino
-            var dst=9999;
-            var select=0;
+        if (mov != null) {
             for (var i in mov) {
-                // comprobamos la distancia hasta el final
-                var frm=[mov[i]['posy'],mov[i]['posx']];
-                //var whr=[mov[i]['posy'],mov[i]['posx']];
-                var res=getLimit(frm,where,9999);
-                texto=texto+"<p> DIRECCION"+mov[i]['posy']+" / "+mov[i]['posx']+" / VALORACION:"+res+"</p>";
-                // si la nueva distancia es menor que la guardada
-                // nos la quedamos
-                if (res < dst) {
-                    dst=res;
-                    select=i;
-                }
+                //texto=texto+"<p>PODEMOS IR A punto Y:"+mov[i]['posy']+" / punto X:"+mov[i]['posx']+" </p>";
             }
 
-            // movemos el puntero a la nueva posicion
-            startingpointy=mov[select]['posy'];
-            startingpointx=mov[select]['posx'];
-            //modificamos el arraymap con los datos del desplazamiento
-            arr['oldx']=arr['posx'];
-            arr['oldy']=arr['posy'];
-            arr['posx']=startingpointx;
-            arr['posy']=startingpointy;
-            // Guardamos en el mapa la posicion
-            arr['map'].push([arr['oldy'],arr['oldx']]);            
-            // pintamos en el mapa la posicion
-            printPosition(arr);
-        }
+            if (mov.length==1) {
+                // movemos el puntero a la nueva posicion
+                startingpointy=mov[0]['posy'];
+                startingpointx=mov[0]['posx'];
+                //modificamos el arraymap con los datos del desplazamiento
+                arr['oldx']=arr['posx'];
+                arr['oldy']=arr['posy'];
+                arr['posx']=startingpointx;
+                arr['posy']=startingpointy;
+                // Guardamos en el mapa la posicion
+                arr['map'].push([arr['oldy'],arr['oldx']]);
+                // pintamos en el mapa la posicion
+                printPosition(arr);
 
-        // comprobamos si hemos llegado al final
-        if (checkIfFinish(arr,where)) {
-            cont=9999;
-        } else if(checkIfBorder(arr)) {
-            // comprueba entonces si hemos llegado
-            // al borde del plano
-            texto=texto+"<p> BORDE DEL PLANO: "+arr['posy']+" / "+arr['posx']+"</p>";
-            // al llegar al borde, debemos retroceder hasta el último cruce
-            // iniciamos otra vez un proceso iterativo que lanza de nueva la busqueda
-            // hacia atras en el tiempo hasta hallar el final
-            texto=goBack(arr,where,texto);
+            } else {
+                // seleccionamos el movimiento a hacer
+                // en funcion de la distancia a la que nos deja
+                // del destino
+                var dst=9999;
+                var select=0;
+                for (var i in mov) {
+                    // comprobamos la distancia hasta el final
+                    var frm=[mov[i]['posy'],mov[i]['posx']];
+                    //var whr=[mov[i]['posy'],mov[i]['posx']];
+                    var res=getLimit(frm,where,9999);
+                    texto=texto+"<p> DIRECCION"+mov[i]['posy']+" / "+mov[i]['posx']+" / VALORACION:"+res+"</p>";
+                    // si la nueva distancia es menor que la guardada
+                    // nos la quedamos
+                    if (res < dst) {
+                        dst=res;
+                        select=i;
+                    }
+                }
+
+                // movemos el puntero a la nueva posicion
+                startingpointy=mov[select]['posy'];
+                startingpointx=mov[select]['posx'];
+                //modificamos el arraymap con los datos del desplazamiento
+                arr['oldx']=arr['posx'];
+                arr['oldy']=arr['posy'];
+                arr['posx']=startingpointx;
+                arr['posy']=startingpointy;
+                // Guardamos en el mapa la posicion
+                arr['map'].push([arr['oldy'],arr['oldx']]);
+                // guardamos la posicion en el cruce
+                cruces.push([arr['oldy'],arr['oldx']]);
+                // pintamos en el mapa la posicion
+                printPosition(arr);
+            }            
+            
+            // comprobamos si hemos llegado al final
+            if (checkIfFinish(arr,where)) {
+                cont=9999;
+            } else if(checkIfBorder(arr)) {
+                // comprueba entonces si hemos llegado
+                // al borde del plano
+                texto=texto+"<p> BORDE DEL PLANO: "+arr['posy']+" / "+arr['posx']+"</p>";
+                // al llegar al borde, debemos retroceder hasta el último cruce
+                // iniciamos otra vez un proceso iterativo que lanza de nueva la busqueda
+                // hacia atras en el tiempo hasta hallar el final
+                texto=goBack(arr,where,texto);
+            }            
+            
+        } else {
+            // esto es el final porque no hay más opciones de continuar
+            cont=maxOper;
+            texto=texto+"<p> FIN DE MOVIMIENTOS POSIBLES: "+arr['posy']+" / "+arr['posx']+"</p>";
+            console.log("FIN DE MOVIMIENTOS POSIBLES EN COORDENADAS Y:"+arr['posy']+" / X:"+arr['posx']+"");
+            for (var k in cruces) {
+                console.log(cruces[k]);
+            }
         }
 
         cont++;
 
-    } while (cont<75)
+        //alert ('NEXT');
+
+    } while (cont<maxOper)
 
 
 
@@ -201,24 +221,29 @@ function getLimit(from, where, max) {
     // vamos a obtener la distancia mínima para llegar al objetivo
     var diff=0;
     if (from[0] < where[0]) {
-        diff=diff+where[0]-from[0];
+        var diff0=where[0]-from[0];
+        diff0=diff*diff;
     } else {
-        diff=diff+from[0]-where[0];
+        var diff0=diff+from[0]-where[0];
+        diff0=diff*diff;
     }
     if (from[1] < where[1]) {
-        diff=diff+where[1]-from[1];
+        var diff1=where[1]-from[1];
+        diff1=diff*diff;
     } else {
-        diff=diff+from[1]-where[1];
+        var diff1=from[1]-where[1];
+        diff1=diff*diff;        
     }
+    
     
     // parametro optimizado
     // como normalmente no es posible ir en linea recta
     // duplicamos la distancia optima
-    diff=diff*2;
+    diff=diff0+diff1;
     
     // si la distancia es mayor que la distancia maxima
     // posible a recorrer de una vez, se toma esta
-    if (diff > max) diff=max;
+    //if (diff > max) diff=max;
     
     
     return diff;
@@ -568,16 +593,16 @@ function recursiveWayR(arraypos,destx,desty,strict) {
         });
         //console.log('num arrays:'+arraydirecciones.length);
         //console.log('direcciones generales:'+dirgeneral[0]+'//'+dirgeneral[1]);
-        console.log('actual:'+arraypos['posx']+'//'+arraypos['posy']);
-        console.log('calculadas:'+arraydirecciones[0]['posx']+'//'+arraydirecciones[0]['posy']);        
+//        console.log('actual:'+arraypos['posx']+'//'+arraypos['posy']);
+//        console.log('calculadas:'+arraydirecciones[0]['posx']+'//'+arraydirecciones[0]['posy']);        
     } else if (arraydirecciones.length==0) {
-        console.log('FINAL:'+arraypos['posx']+'//'+arraypos['posy']+' =>'+arraypos['cont']);
+        console.log('FINAL:'+arraypos['posy']+'//'+arraypos['posx']+' =>'+arraypos['cont']);
         return null;
     } else {
         //console.log('num arrays:'+arraydirecciones.length);
         //console.log('direcciones generales:'+dirgeneral[0]+'//'+dirgeneral[1]);
-        console.log('actual:'+arraypos['posx']+'//'+arraypos['posy']);
-        console.log('calculadas:'+arraydirecciones[0]['posx']+'//'+arraydirecciones[0]['posy']);        
+//        console.log('actual:'+arraypos['posx']+'//'+arraypos['posy']);
+//        console.log('calculadas:'+arraydirecciones[0]['posx']+'//'+arraydirecciones[0]['posy']);        
     }        
     
     return arraydirecciones;
@@ -629,6 +654,7 @@ function goBack(arrmap,where,texto) {
     var crossSelection=[];
     var iniciomap=mapa.length-1;
     var finmap=mapa.length-25;
+    
     for (var i=iniciomap;i>finmap;i--) {
         
         // vamos mapeando el entorno recorrido, desde la casilla
@@ -648,7 +674,7 @@ function goBack(arrmap,where,texto) {
             // valoramos el cruce en distancia
             var limit=getLimit(frm,where,9999);
             //lo guardamos
-            crossSelection.push(frm,limit);            
+            crossSelection.push([frm,limit]);            
         }
         if (entorno[3]=="  ") {
             counter++;
@@ -659,7 +685,7 @@ function goBack(arrmap,where,texto) {
             // valoramos el cruce en distancia
             var limit=getLimit(frm,where,9999);
             //lo guardamos
-            crossSelection.push(frm,limit);            
+            crossSelection.push([frm,limit]);             
         }
         if (entorno[4]=="  ") {
             counter++;
@@ -670,7 +696,7 @@ function goBack(arrmap,where,texto) {
             // valoramos el cruce en distancia
             var limit=getLimit(frm,where,9999);
             //lo guardamos
-            crossSelection.push(frm,limit);            
+            crossSelection.push([frm,limit]);             
         }     
         if (entorno[6]=="  ") {
             counter++;
@@ -681,7 +707,7 @@ function goBack(arrmap,where,texto) {
             // valoramos el cruce en distancia
             var limit=getLimit(frm,where,9999);
             //lo guardamos
-            crossSelection.push(frm,limit);            
+            crossSelection.push([frm,limit]);               
         }        
         texto=texto+"<p> Opciones con cruce: "+counter+"</p>";
                         
@@ -690,11 +716,13 @@ function goBack(arrmap,where,texto) {
     // a partir de la valoracion obtenida
     var selected=[];
     var valoration=9999;
+    
     for (var j in crossSelection) {
-        if (crossSelection[1]<valoration) {
-            valoration=crossSelection[1];
-            selected=crossSelection[0];
+        if ( valoration >= crossSelection[j][1]) {
+            valoration=crossSelection[j][1];
+            selected=crossSelection[j][0];            
         }
+        texto=texto+"<p> Opción de cruce** obtenida es : "+crossSelection[j][0]+" - "+crossSelection[j][1]+"</p>";
     }
     texto=texto+"<p> La mejor opción de cruce obtenida es : "+selected[0]+" - "+selected[1]+"</p>";
     return texto;
