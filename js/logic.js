@@ -62,16 +62,16 @@ function goForrestGo(coordx,coordy) {
         where=getAddress(from);
         //texto=texto+"<p>Hasta el punto Y:"+where[0]+" punto X:"+where[1]+"</p>";
         // utilizando una via
-        way=getWay(from,where);
+        //way=getWay(from,where);
        // texto=texto+"<p>Empezando en la casilla punto Y:"+way[0]+" punto X:"+way[1]+"</p>";
         // durante un periodo de tiempo o hasta un objetivo
-        until=getLimit(from, where,9999);
+        //until=getLimit(from, where,9999);
         //texto=texto+"<p>En un tiempo maximo de "+until+"</p>";
 
-        gway=generalWay(where[0], where[1], from[0], from[1]);
+        //gway=generalWay(where[0], where[1], from[0], from[1]);
         //texto=texto+"<p>Tomando una direccion general "+gway[0]+" "+gway[1]+"</p>";
 
-        entorno=detectEntornoR(from[0], from[1]);
+        //entorno=detectEntornoR(from[0], from[1]);
         //texto=texto+"<p>Con las siguientes opciones: </p>";
         //texto=texto+"<p>"+entorno[0]+" / "+entorno[1]+" / "+entorno[2]+"</p>";
        // texto=texto+"<p>"+entorno[3]+" / W / "+entorno[4]+"</p>";
@@ -154,7 +154,17 @@ function goForrestGo(coordx,coordy) {
             console.log("FIN DE MOVIMIENTOS POSIBLES EN COORDENADAS Y:"+arr['posy']+" / X:"+arr['posx']+"");
             for (var k in cruces) {
                 console.log(cruces[k]);
+                //getCrossRoad([arr['posy'],arr['posx']],cruces[k]);
             }
+            var cnt=0;
+            do {
+                // vuelve sobre sus huellas
+                result=getCrossRoad(arr,cruces[9],cruces);
+                // controla que ha llegado al cruce o al final
+                if (result==true || result==null) cnt=48;
+                cnt++;
+            } while (cnt<48)
+
         }
 
         cont++;
@@ -169,8 +179,41 @@ function goForrestGo(coordx,coordy) {
     
 }
 
-
-
+/**
+ * Esta funcion vuelve sobre sus huellas, hasta que llegue al cruce 
+ *
+ * @param {type} arr
+ * @param {type} destiny
+ * @returns boolean true hemos llegado a un cruce / false continuamos buscando
+ * 
+ */
+function getCrossRoad(arr,destiny,cruces) {
+    
+    // recorremos el array de cruces para comprobar
+    // si ya hemos llegado al cruce
+    for (var i in cruces) {
+        if (cruces[i][0]==arr['posy'] && cruces[i][1]==arr['posx']) {
+            return true;
+        }
+    }
+    
+    var mov=detectEntornoReturning(arr['posy'],arr['posx']);
+    
+    // movemos el puntero a la nueva posicion
+    startingpointy=mov[0];
+    startingpointx=mov[1];
+    //modificamos el arraymap con los datos del desplazamiento
+    arr['oldx']=arr['posx'];
+    arr['oldy']=arr['posy'];
+    arr['posx']=startingpointx;
+    arr['posy']=startingpointy;
+    // Guardamos en el mapa la posicion
+    arr['map'].push([arr['oldy'],arr['oldx']]);
+    // pintamos en el mapa la posicion
+    printPositionReturning(arr);
+    
+    return false;
+}
 
 
 
@@ -610,7 +653,8 @@ function recursiveWayR(arraypos,destx,desty,strict) {
 }
 
 /**
- * 
+ * Pinta el desplazamiento en primera instancia del objeto
+ * siendo * la posicion actual y = la huella dejada
  *
  * @param {type} arrmap
  * @returns {undefined} */
@@ -620,6 +664,290 @@ function printPosition(arrmap) {
     $("#point_"+(arrmap['oldy'])+"-"+(arrmap['oldx'])).text('=')
 
 } 
+
+
+/**
+ * Recibe una matriz con los datos actuales del objeto;
+ * chequea la orientacion general del movimiento, en funcion del destx e desty
+ * Si strict es true, desecha las opciones que no van en la orientacion general
+ * Si strict false, prueba todas las opciones
+ * @param {type} arraypos
+ * @param {type} destx
+ * @param {type} desty
+ * @param {type} strict
+ * @returns {Array|recursiveWay.arraydirecciones}
+ */
+function recursiveWayReturning(arraypos,destx,desty,strict) {
+    
+    // obtenemos la orientación general del destino, desde la posicion actual
+    var dirgeneral=generalWay(destx, desty, arraypos['posx'], arraypos['posy']);
+    // comprobamos las posibilidades de avance, desde la posición actual
+    var posiblesdirecciones=detectEntornoR( arraypos['posy'], arraypos['posx'])
+    
+    var arraydirecciones=[];
+
+    // subir hacia arriba
+    if (posiblesdirecciones[1]!='X' && posiblesdirecciones[1]!='99') {
+        var act=parseInt(arraypos['posy'])-1; 
+        var cont=parseInt(arraypos['cont'])+1; 
+        var arr={
+            posx:arraypos['posx'],
+            posy:act,
+            oldx:0,
+            oldy:0,              
+            cont:cont,
+            cat:0,
+            dir:2,
+            map:null
+            };
+
+            // añadimos la direccion si no es de donde viene
+        if (arr['posx']!=arraypos['oldx'] || arr['posy']!=arraypos['oldy'] ) {
+            // le asignamos la preferencia si va en la direccion general
+            if (dirgeneral[1] == 'up' || dirgeneral[1] == 'center') arr['cat']=1;
+            // pasamos a old la antigua direccion
+            arr['oldx']=arraypos['posx'];
+            arr['oldy']=arraypos['posy'];
+            // guardamos
+            if (strict=="true") {
+                // si strict es true, solo guardamos direcciones cat. 1
+                if (arr['cat']==1) arraydirecciones.push(arr); 
+            } else {
+                arraydirecciones.push(arr);                 
+            }
+           
+        }
+
+    }
+
+    // bajar
+    if (posiblesdirecciones[6]!='X' && posiblesdirecciones[6]!='99') {
+        var act=parseInt(arraypos['posy'])+1;
+        var cont=parseInt(arraypos['cont'])+1;        
+        var arr={
+            posx:arraypos['posx'],
+            posy:act,
+            oldx:0,
+            oldy:0,              
+            cont:cont,
+            cat:0,
+            dir:7,
+            map:null
+            };
+            // añadimos la direccion si no es de donde viene
+        if (arr['posx']!=arraypos['oldx'] || arr['posy']!=arraypos['oldy'] ) {
+            // le asignamos la preferencia si va en la direccion general
+            if (dirgeneral[1]=='down'|| dirgeneral[1] == 'center' ) arr['cat']=1;  
+            // pasamos a old la antigua direccion
+            arr['oldx']=arraypos['posx'];
+            arr['oldy']=arraypos['posy'];
+            if (strict=="true") {
+                // si strict es true, solo guardamos direcciones cat. 1
+                if (arr['cat']==1) arraydirecciones.push(arr); 
+            } else {
+                arraydirecciones.push(arr);                 
+            }           
+        }       
+    }    
+    
+    
+    // izquierda
+    if (posiblesdirecciones[3]!='X' && posiblesdirecciones[3]!='99') {
+        var act=parseInt(arraypos['posx'])-1;
+        var cont=parseInt(arraypos['cont'])+1;        
+        var arr={
+            posx:act,
+            posy:arraypos['posy'],
+            oldx:0,
+            oldy:0,              
+            cont:cont,
+            cat:0,
+            dir:4,
+            map:null
+            };
+            // añadimos la direccion si no es de donde viene
+        if (arr['posx']!=arraypos['oldx'] || arr['posy']!=arraypos['oldy'] ) {
+            // le asignamos la preferencia si va en la direccion general
+            if (dirgeneral[0]=='left' || dirgeneral[0] == 'center') arr['cat']=1;            
+            // pasamos a old la antigua direccion
+            arr['oldx']=arraypos['posx'];
+            arr['oldy']=arraypos['posy'];
+            if (strict=="true") {
+                // si strict es true, solo guardamos direcciones cat. 1
+                if (arr['cat']==1) arraydirecciones.push(arr); 
+            } else {
+                arraydirecciones.push(arr);                 
+            }          
+        }       
+    }    
+    
+    // izquierda
+    if (posiblesdirecciones[4]!='X' && posiblesdirecciones[4]!='99') {
+        var act=parseInt(arraypos['posx'])+1;
+        var cont=parseInt(arraypos['cont'])+1;        
+        var arr={
+            posx:act,
+            posy:arraypos['posy'],
+            oldx:0,
+            oldy:0,              
+            cont:cont,
+            cat:0,
+            dir:5,
+            map:null
+            };
+            // añadimos la direccion si no es de donde viene
+        if (arr['posx']!=arraypos['oldx'] || arr['posy']!=arraypos['oldy'] ) {            
+            // le asignamos la preferencia si va en la direccion general
+            if (dirgeneral[0]=='right' || dirgeneral[0] == 'center') arr['cat']=1;        
+            // pasamos a old la antigua direccion
+            arr['oldx']=arraypos['posx'];
+            arr['oldy']=arraypos['posy'];
+            if (strict=="true") {
+                // si strict es true, solo guardamos direcciones cat. 1
+                if (arr['cat']==1) arraydirecciones.push(arr); 
+            } else {
+                arraydirecciones.push(arr);                 
+            }           
+        }      
+    }
+    
+    // ordenamos el array en funcion de las categorias
+    // las categorias hacia el objetivo son 1
+    // y fuera de objetivo son cero
+    if (arraydirecciones.length>1) {
+        arraydirecciones.sort(function(a,b){
+            if (a['cat']>b['cat']){
+                return -1;
+            }
+            if (a['cat']<b['cat']){
+                return 1;
+            }
+            return 0;
+        });
+        //console.log('num arrays:'+arraydirecciones.length);
+        //console.log('direcciones generales:'+dirgeneral[0]+'//'+dirgeneral[1]);
+//        console.log('actual:'+arraypos['posx']+'//'+arraypos['posy']);
+//        console.log('calculadas:'+arraydirecciones[0]['posx']+'//'+arraydirecciones[0]['posy']);        
+    } else if (arraydirecciones.length==0) {
+        console.log('FINAL:'+arraypos['posy']+'//'+arraypos['posx']+' =>'+arraypos['cont']);
+        return null;
+    } else {
+        //console.log('num arrays:'+arraydirecciones.length);
+        //console.log('direcciones generales:'+dirgeneral[0]+'//'+dirgeneral[1]);
+//        console.log('actual:'+arraypos['posx']+'//'+arraypos['posy']);
+//        console.log('calculadas:'+arraydirecciones[0]['posx']+'//'+arraydirecciones[0]['posy']);        
+    }        
+    
+    return arraydirecciones;
+    
+}
+
+
+/**
+ * Esta funcion detecta lo que hay alrededor del punto en el que
+ * estamos, y devuelve la posicion donde se encuentra la huella =
+ * null si no encuentra nada
+ * 
+ * @param {type} x
+ * @param {type} y
+ * @returns {Array}
+ */
+function detectEntornoReturning ( y, x) {
+    
+    if (x==0) {
+        
+        if (y==0) {
+            
+            if ($("#point_"+(y)+"-"+(x+1)).text() == '=') return [y,x+1];
+            if ($("#point_"+(y+1)+"-"+(x)).text() == '=') return [y+1,x];
+            //if ($("#point_"+(y+1)+"-"+(x+1)).text() == '=') return [y+1,x+1];            
+            
+        } else if (y==sizey) {
+            // la y supera el limite
+            if ($("#point_"+(y-1)+"-"+(x)).text() == '=') return [y-1,x];
+            //if ($("#point_"+(y-1)+"-"+(x+1)).text() == '=') return [y-1,x+1];   
+            
+        } else {
+            // caso normal
+            if ($("#point_"+(y-1)+"-"+(x)).text() == '=') return [y-1,x];
+            //if ($("#point_"+(y-1)+"-"+(x+1)).text() == '=') return [y-1,x+1];              
+            if ($("#point_"+(y)+"-"+(x+1)).text() == '=') return [y,x+1];
+            if ($("#point_"+(y+1)+"-"+(x)).text() == '=') return [y+1,x];
+            //if ($("#point_"+(y+1)+"-"+(x+1)).text() == '=') return [y+1,x+1]; 
+                       
+        }
+        
+    } else if (x==sizex) {
+                // la x supera el limite
+        if (y==0) {
+            
+            if ($("#point_"+(y)+"-"+(x-1)).text() == '=') return [y,x-1];
+            //if ($("#point_"+(y+1)+"-"+(x-1)).text() == '=') return [y+1,x-1];
+                         
+            
+        } else if (y==sizey) {
+        // la y supera el limite            
+            if ($("#point_"+(y-1)+"-"+(x-1)).text() == '=') return [y-1,x-1];
+         
+        } else {
+            // caso normal
+            //if ($("#point_"+(y-1)+"-"+(x-1)).text() == '=') return [y-1,x-1];
+            if ($("#point_"+(y)+"-"+(x-1)).text() == '=') return [y,x-1];
+            //if ($("#point_"+(y+1)+"-"+(x-1)).text() == '=') return [y+1,x-1];          
+        }        
+        
+    } else {
+        
+        // caso normal
+        
+        if (y==0) {
+            if ($("#point_"+(y)+"-"+(x+1)).text() == '=') return [y,x+1];
+            if ($("#point_"+(y+1)+"-"+(x)).text() == '=') return [y+1,x];
+            //if ($("#point_"+(y+1)+"-"+(x+1)).text() == '=') return [y+1,x+1];             
+            if ($("#point_"+(y)+"-"+(x-1)).text() == '=') return [y,x-1];
+            //if ($("#point_"+(y+1)+"-"+(x-1)).text() == '=') return [y+1,x-1]; 
+
+        } else if (y==sizey) {
+            
+        // la y supera el limite       
+            //if ($("#point_"+(y-1)+"-"+(x-1)).text() == '=') return [y-1,x-1];
+            if ($("#point_"+(y-1)+"-"+(x)).text() == '=') return [y-1,x];
+            //if ($("#point_"+(y-1)+"-"+(x+1)).text() == '=') return [y-1,x+1];         
+         
+        } else {
+            // caso normal
+            //if ($("#point_"+(y-1)+"-"+(x-1)).text() == '=') return [y-1,x-1];
+            if ($("#point_"+(y-1)+"-"+(x)).text() == '=') return [y-1,x];
+            //if ($("#point_"+(y-1)+"-"+(x+1)).text() == '=') return [y-1,x+1];   
+            if ($("#point_"+(y)+"-"+(x+1)).text() == '=') return [y,x+1];
+            if ($("#point_"+(y+1)+"-"+(x)).text() == '=') return [y+1,x];
+            //if ($("#point_"+(y+1)+"-"+(x+1)).text() == '=') return [y+1,x+1];             
+            if ($("#point_"+(y)+"-"+(x-1)).text() == '=') return [y,x-1];
+            //if ($("#point_"+(y+1)+"-"+(x-1)).text() == '=') return [y+1,x-1]; 
+        
+        }        
+        
+    }
+    
+    
+    return null;
+}
+
+
+
+/**
+ * Pinta el desplazamiento en primera instancia del objeto
+ * siendo * la posicion actual y + la huella dejada
+ *
+ * @param {type} arrmap
+ * @returns {undefined} */
+function printPositionReturning(arrmap) {
+    
+    $("#point_"+(arrmap['posy'])+"-"+(arrmap['posx'])).text('*');
+    $("#point_"+(arrmap['oldy'])+"-"+(arrmap['oldx'])).text('+')
+
+}
+
 
 /**
  * Esta funcion comprueba si hemos llegado a destino
