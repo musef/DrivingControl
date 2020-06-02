@@ -51,7 +51,7 @@ function goForrestGo(coordx,coordy) {
     var cont=0;
     // maximos de movimientos a realizar
     // seria como quedarse sin gasolina
-    var maxOper=75;
+    var maxOper=70;
     do {
 
         // desde una ubicación
@@ -108,7 +108,7 @@ function goForrestGo(coordx,coordy) {
                     // comprobamos la distancia hasta el final
                     var frm=[mov[i]['posy'],mov[i]['posx']];
                     //var whr=[mov[i]['posy'],mov[i]['posx']];
-                    var res=getLimit(frm,where,9999);
+                    var res=getLimit(frm,where);
                     texto=texto+"<p> DIRECCION"+mov[i]['posy']+" / "+mov[i]['posx']+" / VALORACION:"+res+"</p>";
                     // si la nueva distancia es menor que la guardada
                     // nos la quedamos
@@ -156,15 +156,8 @@ function goForrestGo(coordx,coordy) {
                 console.log(cruces[k]);
                 //getCrossRoad([arr['posy'],arr['posx']],cruces[k]);
             }
-            var cnt=0;
-            do {
-                // vuelve sobre sus huellas
-                result=getCrossRoad(arr,cruces[9],cruces);
-                // controla que ha llegado al cruce o al final
-                if (result==true || result==null) cnt=48;
-                cnt++;
-            } while (cnt<48)
 
+            tryAgain(arr,where,cruces);
         }
 
         cont++;
@@ -227,21 +220,10 @@ function getCrossRoad(arr,destiny,cruces) {
  * @returns null | array
  */
 function getAddress(from) {
-    var ret=[49,40];
+    var ret=[49,24];
     return ret;
 }
 
-/**
- * Esta funcion retorna un camino factible hacia la direccion del objetivo
- * array x,y
- * @param {type} from
- * @param {type} where
- * @returns null | array
- */
-function getWay(from,where) {
-    var ret=[1,1];
-    return ret;
-}
 
 /**
  * Limit nos indica el número máximo de pasos a realizar para llegar
@@ -255,7 +237,7 @@ function getWay(from,where) {
  * @param {type} max distancia maxima que puede recorrer
  * @returns null | int
  */
-function getLimit(from, where, max) {
+function getLimit(from, where) {
     
     //if (from==null || where==null) return null;
     
@@ -265,29 +247,23 @@ function getLimit(from, where, max) {
     var diff=0;
     if (from[0] < where[0]) {
         var diff0=where[0]-from[0];
-        diff0=diff*diff;
+        diff0=diff0*diff0;
     } else {
-        var diff0=diff+from[0]-where[0];
-        diff0=diff*diff;
+        var diff0=from[0]-where[0];
+        diff0=diff0*diff0;
     }
     if (from[1] < where[1]) {
         var diff1=where[1]-from[1];
-        diff1=diff*diff;
+        diff1=diff1*diff1;
     } else {
         var diff1=from[1]-where[1];
-        diff1=diff*diff;        
+        diff1=diff1*diff1;        
     }
-    
-    
+        
     // parametro optimizado
     // como normalmente no es posible ir en linea recta
     // duplicamos la distancia optima
     diff=diff0+diff1;
-    
-    // si la distancia es mayor que la distancia maxima
-    // posible a recorrer de una vez, se toma esta
-    //if (diff > max) diff=max;
-    
     
     return diff;
 }
@@ -666,181 +642,206 @@ function printPosition(arrmap) {
 } 
 
 
-/**
- * Recibe una matriz con los datos actuales del objeto;
- * chequea la orientacion general del movimiento, en funcion del destx e desty
- * Si strict es true, desecha las opciones que no van en la orientacion general
- * Si strict false, prueba todas las opciones
- * @param {type} arraypos
- * @param {type} destx
- * @param {type} desty
- * @param {type} strict
- * @returns {Array|recursiveWay.arraydirecciones}
- */
-function recursiveWayReturning(arraypos,destx,desty,strict) {
-    
-    // obtenemos la orientación general del destino, desde la posicion actual
-    var dirgeneral=generalWay(destx, desty, arraypos['posx'], arraypos['posy']);
-    // comprobamos las posibilidades de avance, desde la posición actual
-    var posiblesdirecciones=detectEntornoR( arraypos['posy'], arraypos['posx'])
-    
-    var arraydirecciones=[];
+    /**
+     * Recibe una matriz con los datos actuales del objeto;
+     * chequea la orientacion general del movimiento, en funcion del destx e desty
+     * Devuelve una unica direccion hacia donde desplazarse !!
+     * 
+     * Si strict es true, desecha las opciones que han sido usada ya, es decir solo
+     * coge caminos vacios
+     * Si strict false, prueba todas las opciones
+     * @param {type} arraypos
+     * @param {type} destx
+     * @param {type} desty
+     * @param {type} strict
+     * @returns {Array|recursiveWay.arraydirecciones}
+     */
+    function recursiveWayReturning(arraypos,destx,desty,strict) {
 
-    // subir hacia arriba
-    if (posiblesdirecciones[1]!='X' && posiblesdirecciones[1]!='99') {
-        var act=parseInt(arraypos['posy'])-1; 
-        var cont=parseInt(arraypos['cont'])+1; 
-        var arr={
-            posx:arraypos['posx'],
-            posy:act,
-            oldx:0,
-            oldy:0,              
-            cont:cont,
-            cat:0,
-            dir:2,
-            map:null
-            };
+        // obtenemos la orientación general del destino, desde la posicion actual
+        var dirgeneral=generalWay(destx, desty, arraypos['posx'], arraypos['posy']);
+        // comprobamos las posibilidades de avance, desde la posición actual
+        var posiblesdirecciones=detectEntornoR( arraypos['posy'], arraypos['posx'])
 
-            // añadimos la direccion si no es de donde viene
-        if (arr['posx']!=arraypos['oldx'] || arr['posy']!=arraypos['oldy'] ) {
-            // le asignamos la preferencia si va en la direccion general
-            if (dirgeneral[1] == 'up' || dirgeneral[1] == 'center') arr['cat']=1;
-            // pasamos a old la antigua direccion
-            arr['oldx']=arraypos['posx'];
-            arr['oldy']=arraypos['posy'];
-            // guardamos
-            if (strict=="true") {
-                // si strict es true, solo guardamos direcciones cat. 1
-                if (arr['cat']==1) arraydirecciones.push(arr); 
-            } else {
-                arraydirecciones.push(arr);                 
+        var arraydirecciones=[];
+
+        // subir hacia arriba
+        if (posiblesdirecciones[1]!='X' && posiblesdirecciones[1]!='99' && posiblesdirecciones[1]!='+') {
+            
+            var act=parseInt(arraypos['posy'])-1; 
+            var cont=parseInt(arraypos['cont'])+1; 
+            var arr={
+                posx:arraypos['posx'],
+                posy:act,
+                oldx:0,
+                oldy:0,              
+                cont:cont,
+                cat:0,
+                dir:2,
+                map:null
+                };
+
+                // añadimos la direccion si no es de donde viene
+            if (arr['posx']!=arraypos['oldx'] || arr['posy']!=arraypos['oldy'] ) {
+                // le asignamos la preferencia si va en la direccion general
+                if (dirgeneral[1] == 'up' || dirgeneral[1] == 'center') arr['cat']=1;
+                // pasamos a old la antigua direccion
+                arr['oldx']=arraypos['posx'];
+                arr['oldy']=arraypos['posy'];
+                // guardamos
+                if ( posiblesdirecciones[1]!= '=' || strict == false ){
+                    arraydirecciones.push(arr);
+                } 
+
             }
-           
+
         }
 
-    }
+        // bajar
+        if (posiblesdirecciones[6]!='X' && posiblesdirecciones[6]!='99' && posiblesdirecciones[1]!='+') {
+            var act=parseInt(arraypos['posy'])+1;
+            var cont=parseInt(arraypos['cont'])+1;        
+            var arr={
+                posx:arraypos['posx'],
+                posy:act,
+                oldx:0,
+                oldy:0,              
+                cont:cont,
+                cat:0,
+                dir:7,
+                map:null
+                };
+                // añadimos la direccion si no es de donde viene
+            if (arr['posx']!=arraypos['oldx'] || arr['posy']!=arraypos['oldy'] ) {
+                // le asignamos la preferencia si va en la direccion general
+                if (dirgeneral[1]=='down'|| dirgeneral[1] == 'center' ) arr['cat']=1;  
+                // pasamos a old la antigua direccion
+                arr['oldx']=arraypos['posx'];
+                arr['oldy']=arraypos['posy'];
+                // guardamos
+                if ( posiblesdirecciones[6]!= '=' || strict == false ){
+                    arraydirecciones.push(arr);
+                }         
+            }       
+        }    
 
-    // bajar
-    if (posiblesdirecciones[6]!='X' && posiblesdirecciones[6]!='99') {
-        var act=parseInt(arraypos['posy'])+1;
-        var cont=parseInt(arraypos['cont'])+1;        
-        var arr={
-            posx:arraypos['posx'],
-            posy:act,
-            oldx:0,
-            oldy:0,              
-            cont:cont,
-            cat:0,
-            dir:7,
-            map:null
-            };
-            // añadimos la direccion si no es de donde viene
-        if (arr['posx']!=arraypos['oldx'] || arr['posy']!=arraypos['oldy'] ) {
-            // le asignamos la preferencia si va en la direccion general
-            if (dirgeneral[1]=='down'|| dirgeneral[1] == 'center' ) arr['cat']=1;  
-            // pasamos a old la antigua direccion
-            arr['oldx']=arraypos['posx'];
-            arr['oldy']=arraypos['posy'];
-            if (strict=="true") {
-                // si strict es true, solo guardamos direcciones cat. 1
-                if (arr['cat']==1) arraydirecciones.push(arr); 
+
+        // izquierda
+        if (posiblesdirecciones[3]!='X' && posiblesdirecciones[3]!='99' && posiblesdirecciones[1]!='+') {
+            var act=parseInt(arraypos['posx'])-1;
+            var cont=parseInt(arraypos['cont'])+1;        
+            var arr={
+                posx:act,
+                posy:arraypos['posy'],
+                oldx:0,
+                oldy:0,              
+                cont:cont,
+                cat:0,
+                dir:4,
+                map:null
+                };
+                // añadimos la direccion si no es de donde viene
+            if (arr['posx']!=arraypos['oldx'] || arr['posy']!=arraypos['oldy'] ) {
+                // le asignamos la preferencia si va en la direccion general
+                if (dirgeneral[0]=='left' || dirgeneral[0] == 'center') arr['cat']=1;            
+                // pasamos a old la antigua direccion
+                arr['oldx']=arraypos['posx'];
+                arr['oldy']=arraypos['posy'];
+                // guardamos
+                if ( posiblesdirecciones[3]!= '=' || strict == false ){
+                    arraydirecciones.push(arr);
+                }        
+            }       
+        }    
+
+        // izquierda
+        if (posiblesdirecciones[4]!='X' && posiblesdirecciones[4]!='99' && posiblesdirecciones[1]!='+') {
+            var act=parseInt(arraypos['posx'])+1;
+            var cont=parseInt(arraypos['cont'])+1;        
+            var arr={
+                posx:act,
+                posy:arraypos['posy'],
+                oldx:0,
+                oldy:0,              
+                cont:cont,
+                cat:0,
+                dir:5,
+                map:null
+                };
+                // añadimos la direccion si no es de donde viene
+            if (arr['posx']!=arraypos['oldx'] || arr['posy']!=arraypos['oldy'] ) {            
+                // le asignamos la preferencia si va en la direccion general
+                if (dirgeneral[0]=='right' || dirgeneral[0] == 'center') arr['cat']=1;        
+                // pasamos a old la antigua direccion
+                arr['oldx']=arraypos['posx'];
+                arr['oldy']=arraypos['posy'];
+                // guardamos
+                if ( posiblesdirecciones[4]!= '=' || strict == false ){
+                    arraydirecciones.push(arr);
+                }               
+          
+            }      
+        }
+
+        // ordenamos el array en funcion de las categorias
+        // las categorias hacia el objetivo son 1
+        // y fuera de objetivo son cero
+        if (arraydirecciones.length>1) {
+            arraydirecciones.sort(function(a,b){
+                if (a['cat']>b['cat']){
+                    return -1;
+                }
+                if (a['cat']<b['cat']){
+                    return 1;
+                }
+                return 0;
+            });
+            //console.log('num arrays:'+arraydirecciones.length);
+            //console.log('direcciones generales:'+dirgeneral[0]+'//'+dirgeneral[1]);
+    //        console.log('actual:'+arraypos['posx']+'//'+arraypos['posy']);
+    //        console.log('calculadas:'+arraydirecciones[0]['posx']+'//'+arraydirecciones[0]['posy']);        
+        } else if (arraydirecciones.length==0) {
+            console.log('FINAL:'+arraypos['posy']+'//'+arraypos['posx']+' =>'+arraypos['cont']);
+            return null;
+        } else {
+            //console.log('num arrays:'+arraydirecciones.length);
+            //console.log('direcciones generales:'+dirgeneral[0]+'//'+dirgeneral[1]);
+    //        console.log('actual:'+arraypos['posx']+'//'+arraypos['posy']);
+    //        console.log('calculadas:'+arraydirecciones[0]['posx']+'//'+arraydirecciones[0]['posy']);        
+        }        
+
+
+        // NOS MOVEMOS AL NUEVO SITIO
+            if (arraydirecciones.length==1) {
+                // retornamos puntero a la nueva posicion
+                return [arraydirecciones[0]['posy'],arraydirecciones[0]['posx']];
+
             } else {
-                arraydirecciones.push(arr);                 
-            }           
-        }       
-    }    
-    
-    
-    // izquierda
-    if (posiblesdirecciones[3]!='X' && posiblesdirecciones[3]!='99') {
-        var act=parseInt(arraypos['posx'])-1;
-        var cont=parseInt(arraypos['cont'])+1;        
-        var arr={
-            posx:act,
-            posy:arraypos['posy'],
-            oldx:0,
-            oldy:0,              
-            cont:cont,
-            cat:0,
-            dir:4,
-            map:null
-            };
-            // añadimos la direccion si no es de donde viene
-        if (arr['posx']!=arraypos['oldx'] || arr['posy']!=arraypos['oldy'] ) {
-            // le asignamos la preferencia si va en la direccion general
-            if (dirgeneral[0]=='left' || dirgeneral[0] == 'center') arr['cat']=1;            
-            // pasamos a old la antigua direccion
-            arr['oldx']=arraypos['posx'];
-            arr['oldy']=arraypos['posy'];
-            if (strict=="true") {
-                // si strict es true, solo guardamos direcciones cat. 1
-                if (arr['cat']==1) arraydirecciones.push(arr); 
-            } else {
-                arraydirecciones.push(arr);                 
-            }          
-        }       
-    }    
-    
-    // izquierda
-    if (posiblesdirecciones[4]!='X' && posiblesdirecciones[4]!='99') {
-        var act=parseInt(arraypos['posx'])+1;
-        var cont=parseInt(arraypos['cont'])+1;        
-        var arr={
-            posx:act,
-            posy:arraypos['posy'],
-            oldx:0,
-            oldy:0,              
-            cont:cont,
-            cat:0,
-            dir:5,
-            map:null
-            };
-            // añadimos la direccion si no es de donde viene
-        if (arr['posx']!=arraypos['oldx'] || arr['posy']!=arraypos['oldy'] ) {            
-            // le asignamos la preferencia si va en la direccion general
-            if (dirgeneral[0]=='right' || dirgeneral[0] == 'center') arr['cat']=1;        
-            // pasamos a old la antigua direccion
-            arr['oldx']=arraypos['posx'];
-            arr['oldy']=arraypos['posy'];
-            if (strict=="true") {
-                // si strict es true, solo guardamos direcciones cat. 1
-                if (arr['cat']==1) arraydirecciones.push(arr); 
-            } else {
-                arraydirecciones.push(arr);                 
-            }           
-        }      
+                // seleccionamos el movimiento a hacer
+                // en funcion de la distancia a la que nos deja
+                // del destino
+                var dst=999999;
+                var select=0;
+                for (var i in arraydirecciones) {
+                    // comprobamos la distancia hasta el final
+                    var frm=[arraydirecciones[i]['posy'],arraydirecciones[i]['posx']];
+                    //var whr=[mov[i]['posy'],mov[i]['posx']];
+                    var res=getLimit(frm,[desty,destx]);
+                    //texto=texto+"<p> DIRECCION"+arraydirecciones[i]['posy']+" / "+arraydirecciones[i]['posx']+" / VALORACION:"+res+"</p>";
+                    // si la nueva distancia es menor que la guardada
+                    // nos la quedamos
+                    if (res < dst ) {
+                        dst=res;
+                        select=i;
+                    }
+                }
+
+                // retornamos puntero a la nueva posicion
+                return [arraydirecciones[select]['posy'],arraydirecciones[select]['posx']];
+
+            }
+
     }
-    
-    // ordenamos el array en funcion de las categorias
-    // las categorias hacia el objetivo son 1
-    // y fuera de objetivo son cero
-    if (arraydirecciones.length>1) {
-        arraydirecciones.sort(function(a,b){
-            if (a['cat']>b['cat']){
-                return -1;
-            }
-            if (a['cat']<b['cat']){
-                return 1;
-            }
-            return 0;
-        });
-        //console.log('num arrays:'+arraydirecciones.length);
-        //console.log('direcciones generales:'+dirgeneral[0]+'//'+dirgeneral[1]);
-//        console.log('actual:'+arraypos['posx']+'//'+arraypos['posy']);
-//        console.log('calculadas:'+arraydirecciones[0]['posx']+'//'+arraydirecciones[0]['posy']);        
-    } else if (arraydirecciones.length==0) {
-        console.log('FINAL:'+arraypos['posy']+'//'+arraypos['posx']+' =>'+arraypos['cont']);
-        return null;
-    } else {
-        //console.log('num arrays:'+arraydirecciones.length);
-        //console.log('direcciones generales:'+dirgeneral[0]+'//'+dirgeneral[1]);
-//        console.log('actual:'+arraypos['posx']+'//'+arraypos['posy']);
-//        console.log('calculadas:'+arraydirecciones[0]['posx']+'//'+arraydirecciones[0]['posy']);        
-    }        
-    
-    return arraydirecciones;
-    
-}
 
 
 /**
@@ -1000,7 +1001,7 @@ function goBack(arrmap,where,texto) {
             var cy=mapa[i][0]-1;
             var frm=[cy,cx];      
             // valoramos el cruce en distancia
-            var limit=getLimit(frm,where,9999);
+            var limit=getLimit(frm,where);
             //lo guardamos
             crossSelection.push([frm,limit]);            
         }
@@ -1011,7 +1012,7 @@ function goBack(arrmap,where,texto) {
             var cy=mapa[i][0];
             var frm=[cy,cx];      
             // valoramos el cruce en distancia
-            var limit=getLimit(frm,where,9999);
+            var limit=getLimit(frm,where);
             //lo guardamos
             crossSelection.push([frm,limit]);             
         }
@@ -1022,7 +1023,7 @@ function goBack(arrmap,where,texto) {
             var cy=mapa[i][0];
             var frm=[cy,cx];      
             // valoramos el cruce en distancia
-            var limit=getLimit(frm,where,9999);
+            var limit=getLimit(frm,where);
             //lo guardamos
             crossSelection.push([frm,limit]);             
         }     
@@ -1033,7 +1034,7 @@ function goBack(arrmap,where,texto) {
             var cy=mapa[i][0]+1;
             var frm=[cy,cx];      
             // valoramos el cruce en distancia
-            var limit=getLimit(frm,where,9999);
+            var limit=getLimit(frm,where);
             //lo guardamos
             crossSelection.push([frm,limit]);               
         }        
@@ -1055,3 +1056,170 @@ function goBack(arrmap,where,texto) {
     texto=texto+"<p> La mejor opción de cruce obtenida es : "+selected[0]+" - "+selected[1]+"</p>";
     return texto;
 }
+
+/*
+ * Vamos a iniciar un proceso de vuelta atrás porque hemos llegado
+ * a un callejón sin salida
+ * 
+ * Tenemos un listado de cruces, y tenemos que volver al anterior cruce
+ * explorar las posibilidades de ese cruce anterior
+ * SI llegamos a meta OK
+ * Pero puede:
+ * a) llevarnos a otro callejon sin salida SOLUCION - ir al cruce anterior
+ * b) llevarnos al mismo cruce SOLUCION - ir al cruce anterior
+ * c) encontrarnos con otro de los cruces de la lista SOLUCION - continuar por este nuevo cruce
+ * 
+ */
+function tryAgain(arr,where,cruces) {
+    
+    var exit=false;
+
+    var cnt=false;
+    do {
+        // vuelve sobre sus huellas
+        result=getCrossRoad(arr,cruces[9],cruces);
+        // controla que ha llegado al cruce o al final
+        if (result==true || result==null) cnt=true;
+    } while (cnt != true)
+
+        // una vez en el cruce anterior
+        // elegimos un camino distinto al elegido anteriormente
+    var mov_new=seleccionaOtroCamino(arr,where);
+    
+    var contadorSeguridad=0;
+    do {
+
+        
+        // comprobamos si hemos llego al destino
+        var result=compruebaFin(mov_new,where);
+
+        if (result==true) {
+            // fin camino
+            exit=true;
+            
+        } else {
+            // NOS MOVEMOS AL NUEVO SITIO
+
+            // movemos el puntero a la nueva posicion
+            startingpointy=mov_new[0];
+            startingpointx=mov_new[1];
+            //modificamos el arraymap con los datos del desplazamiento
+            arr['oldx']=arr['posx'];
+            arr['oldy']=arr['posy'];
+            arr['posx']=startingpointx;
+            arr['posy']=startingpointy;
+            // Guardamos en el mapa la posicion
+            arr['map'].push([arr['oldy'],arr['oldx']]);
+            // pintamos en el mapa la posicion
+            printPositionReturning(arr);
+
+            
+            
+            // chequeamos si la nueva posicion es un cruce
+            var esCruce=checkCruce(arr);
+
+            if (esCruce==true) {
+                
+                // comprobamos si habiamos pasado por este cruce
+                // o es un cruce nuevo
+                var esNuevoCruce=checkExisteCruce(arr,cruces);
+
+                if (esNuevoCruce==true) {
+                    // es un cruce nuevo, debemos seleccionar un camino
+                    // para continuar
+                    mov_new=seleccionaNuevoCamino(arr,where); 
+                } else {
+                    // es un cruce antiguo, debemos seleccionar
+                    // otro camino
+                    mov_new=seleccionaOtroCamino(arr,where); 
+                }
+            } else {
+                // buscamos la siguiente continuacion
+                mov_new=seleccionaOtroCamino(arr,where);
+            }         
+        }
+
+        // para evitar bucles infinitos
+        contadorSeguridad++;
+        if (contadorSeguridad > 11) exit=true;
+        
+    } while (exit != true)
+    
+    return true;
+    
+}
+
+function seleccionaNuevoCamino(arr,where) {
+    return recursiveWayReturning(arr,where[0],where[1],false);
+}
+
+function seleccionaOtroCamino(arr,where) {
+    var result=recursiveWayReturning(arr,where[0],where[1],true);
+    if (result==null) result=recursiveWayReturning(arr,where[0],where[1],false);
+    return result;  
+}
+
+    /**
+     * Esta funcion comprueba si nos encontramos ante un cruce 
+     *
+     * @param {type} arr
+     * @returns {Boolean} */
+    function checkCruce(arr) {
+
+        var entorno=detectEntornoR ( arr['posy'], arr['posx']);
+        var counter=0;
+
+
+            if (entorno[1]=="  " || entorno[1]=='=' || entorno[1]=='+') {
+                counter++;           
+            }
+            if (entorno[3]=="  " || entorno[3]=='=' || entorno[3]=='+') {
+                counter++;           
+            }
+            if (entorno[4]=="  " || entorno[4]=='=' || entorno[4]=='+') {
+                counter++;            
+            }     
+            if (entorno[6]=="  " || entorno[6]=='=' || entorno[6]=='+') {
+                counter++;               
+            }
+
+        // es un cruce si tenemos más de dos opciones
+        if (counter>2) return true;
+
+        return false;
+    }
+
+    /**
+     * Esta funcion nos confirma si el cruce en el que estamos 
+     * es un cruce que ya recorrimos en el viaje original 
+     *
+     * @param {type} arr
+     * @param {type} cruces
+     * @returns {Boolean} */
+    function checkExisteCruce(arr,cruces) {
+
+        // recorremos el array de cruces para comprobar
+        // si existe es cruce en nuestro array de cruces recorridos
+        for (var i in cruces) {
+            if (cruces[i][0]==arr['posy'] && cruces[i][1]==arr['posx']) {
+                return true;
+            }
+        }    
+        return false;
+    }
+
+    /**
+     * 
+     *
+     * @param {type} mov
+     * @param {type} where
+     * @returns {Boolean} */
+    function compruebaFin(mov,where) {
+
+        if (mov[0]==where[0] && mov[1]==where[1]) return true;
+        return false;
+
+    }
+
+
+          
