@@ -698,7 +698,7 @@ function printPosition(arrmap) {
         }
 
         // bajar
-        if (posiblesdirecciones[6]!='X' && posiblesdirecciones[6]!='99' && posiblesdirecciones[1]!='+') {
+        if (posiblesdirecciones[6]!='X' && posiblesdirecciones[6]!='99' && posiblesdirecciones[6]!='+') {
             var act=parseInt(arraypos['posy'])+1;
             var cont=parseInt(arraypos['cont'])+1;        
             var arr={
@@ -727,7 +727,7 @@ function printPosition(arrmap) {
 
 
         // izquierda
-        if (posiblesdirecciones[3]!='X' && posiblesdirecciones[3]!='99' && posiblesdirecciones[1]!='+') {
+        if (posiblesdirecciones[3]!='X' && posiblesdirecciones[3]!='99' && posiblesdirecciones[3]!='+') {
             var act=parseInt(arraypos['posx'])-1;
             var cont=parseInt(arraypos['cont'])+1;        
             var arr={
@@ -755,7 +755,7 @@ function printPosition(arrmap) {
         }    
 
         // izquierda
-        if (posiblesdirecciones[4]!='X' && posiblesdirecciones[4]!='99' && posiblesdirecciones[1]!='+') {
+        if (posiblesdirecciones[4]!='X' && posiblesdirecciones[4]!='99' && posiblesdirecciones[4]!='+') {
             var act=parseInt(arraypos['posx'])+1;
             var cont=parseInt(arraypos['cont'])+1;        
             var arr={
@@ -1141,7 +1141,7 @@ function tryAgain(arr,where,cruces) {
 
         // para evitar bucles infinitos
         contadorSeguridad++;
-        if (contadorSeguridad > 11) exit=true;
+        if (contadorSeguridad > 12) exit=true;
         
     } while (exit != true)
     
