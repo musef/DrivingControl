@@ -14,8 +14,8 @@
  */
 
 // dimensiones del campo
-var sizex=50;
-var sizey=50;
+var sizex=49;
+var sizey=49;
 
     // cruces que encontramos en el recorrido
     var cruces=[];
@@ -54,35 +54,16 @@ function goForrestGo(coordx,coordy) {
     var maxOper=70;
     do {
 
-        // desde una ubicación
-        from=[startingpointy,startingpointx];
+        // desde una ubicación x, y
+        from=[startingpointx,startingpointy];
 
-        //texto=texto+"<p>Queremos ir desde el punto Y:"+from[0]+" X:"+from[1]+"</p>";
-        // tenemos que acceder a un punto en el mapa
+        // tenemos que acceder a un punto en el mapa x,y
         where=getAddress(from);
-        //texto=texto+"<p>Hasta el punto Y:"+where[0]+" punto X:"+where[1]+"</p>";
-        // utilizando una via
-        //way=getWay(from,where);
-       // texto=texto+"<p>Empezando en la casilla punto Y:"+way[0]+" punto X:"+way[1]+"</p>";
-        // durante un periodo de tiempo o hasta un objetivo
-        //until=getLimit(from, where,9999);
-        //texto=texto+"<p>En un tiempo maximo de "+until+"</p>";
 
-        //gway=generalWay(where[0], where[1], from[0], from[1]);
-        //texto=texto+"<p>Tomando una direccion general "+gway[0]+" "+gway[1]+"</p>";
-
-        //entorno=detectEntornoR(from[0], from[1]);
-        //texto=texto+"<p>Con las siguientes opciones: </p>";
-        //texto=texto+"<p>"+entorno[0]+" / "+entorno[1]+" / "+entorno[2]+"</p>";
-       // texto=texto+"<p>"+entorno[3]+" / W / "+entorno[4]+"</p>";
-        //texto=texto+"<p>"+entorno[5]+" / "+entorno[6]+" / "+entorno[7]+"</p>";
-
+        // obtenemos una lista de direcciones posibles o null
         mov=recursiveWayR(arr,where[0],where[1],true);
 
         if (mov != null) {
-            for (var i in mov) {
-                //texto=texto+"<p>PODEMOS IR A punto Y:"+mov[i]['posy']+" / punto X:"+mov[i]['posx']+" </p>";
-            }
 
             if (mov.length==1) {
                 // movemos el puntero a la nueva posicion
@@ -106,7 +87,7 @@ function goForrestGo(coordx,coordy) {
                 var select=0;
                 for (var i in mov) {
                     // comprobamos la distancia hasta el final
-                    var frm=[mov[i]['posy'],mov[i]['posx']];
+                    var frm=[mov[i]['posx'],mov[i]['posy']];
                     //var whr=[mov[i]['posy'],mov[i]['posx']];
                     var res=getLimit(frm,where);
                     texto=texto+"<p> DIRECCION"+mov[i]['posy']+" / "+mov[i]['posx']+" / VALORACION:"+res+"</p>";
@@ -220,7 +201,7 @@ function getCrossRoad(arr,destiny,cruces) {
  * @returns null | array
  */
 function getAddress(from) {
-    var ret=[49,24];
+    var ret=[24,49];
     return ret;
 }
 
@@ -968,10 +949,10 @@ function checkIfFinish(arrmap,where) {
  * @returns {undefined} */
 function checkIfBorder(arrmap) {
     
-    if (arrmap['posy']==0 || arrmap['posy']==(sizey-1)) {
+    if (arrmap['posy']==0 || arrmap['posy']==(sizey)) {
         return true;
     }
-    if (arrmap['posx']==0 || arrmap['posx']==(sizex-1)) {
+    if (arrmap['posx']==0 || arrmap['posx']==(sizex)) {
         return true;
     }    
     return false;
@@ -1075,9 +1056,10 @@ function tryAgain(arr,where,cruces) {
     var exit=false;
 
     var cnt=false;
+    var contadorCruces=cruces.length-1;
     do {
         // vuelve sobre sus huellas
-        result=getCrossRoad(arr,cruces[9],cruces);
+        result=getCrossRoad(arr,cruces[contadorCruces],cruces);
         // controla que ha llegado al cruce o al final
         if (result==true || result==null) cnt=true;
     } while (cnt != true)
@@ -1122,9 +1104,9 @@ function tryAgain(arr,where,cruces) {
                 
                 // comprobamos si habiamos pasado por este cruce
                 // o es un cruce nuevo
-                var esNuevoCruce=checkExisteCruce(arr,cruces);
+                var esAntiguoCruce=checkCruceRecorrido(arr,cruces);
 
-                if (esNuevoCruce==true) {
+                if (esAntiguoCruce==false) {
                     // es un cruce nuevo, debemos seleccionar un camino
                     // para continuar
                     mov_new=seleccionaNuevoCamino(arr,where); 
@@ -1136,12 +1118,24 @@ function tryAgain(arr,where,cruces) {
             } else {
                 // buscamos la siguiente continuacion
                 mov_new=seleccionaOtroCamino(arr,where);
+                if (mov_new==null) {
+                    contadorCruces--;
+                    do {
+                        // vuelve sobre sus huellas
+                        result=getCrossRoad(arr,cruces[contadorCruces],cruces);
+                        // controla que ha llegado al cruce o al final
+                        if (result==true || result==null) cnt=true;
+                    } while (cnt != true);
+                    mov_new=seleccionaOtroCamino(arr,where);
+                }
+                
+                
             }         
         }
 
         // para evitar bucles infinitos
         contadorSeguridad++;
-        if (contadorSeguridad > 12) exit=true;
+        if (contadorSeguridad > 50) exit=true;
         
     } while (exit != true)
     
@@ -1196,7 +1190,7 @@ function seleccionaOtroCamino(arr,where) {
      * @param {type} arr
      * @param {type} cruces
      * @returns {Boolean} */
-    function checkExisteCruce(arr,cruces) {
+    function checkCruceRecorrido(arr,cruces) {
 
         // recorremos el array de cruces para comprobar
         // si existe es cruce en nuestro array de cruces recorridos
